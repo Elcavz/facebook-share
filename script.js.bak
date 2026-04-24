@@ -1,0 +1,424 @@
+
+// ---------- TMDB CONFIG ----------
+const API_KEY = 'b25412885fcb808bb37e93b4c6ccb763';
+const BASE_API = 'https://api.themoviedb.org/3';
+const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+const FALLBACK_POSTER = 'https://via.placeholder.com/500x750?text=No+Poster';
+const MY_WEBSITE = 'https://www.elcavzflixter.site';
+
+// DOM Elements
+const moviesContainer = document.getElementById('moviesContainer');
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchButton');
+const trendingBtn = document.getElementById('trendingButton');
+const dynamicHeader = document.getElementById('dynamicHeader');
+const modal = document.getElementById('movieModal');
+const closeModalSpan = document.querySelector('.close-modal');
+const trailerContainer = document.getElementById('trailerContainer');
+const fullMovieInfoDiv = document.getElementById('fullMovieInfo');
+const modalFbBtn = document.getElementById('modalFbShareBtn');
+const modalCopyBtn = document.getElementById('modalCopyContentBtn');
+const copyFeedbackSpan = document.getElementById('copyFeedbackMsg');
+
+// ---------- SHARED TRACKING (localStorage) ----------
+let sharedMovies = new Set();
+
+function loadSharedStatus() {
+    const stored = localStorage.getItem('elcavz_shared_movies');
+    if (stored) {
+        try {
+            const arr = JSON.parse(stored);
+            sharedMovies = new Set(arr);
+        } catch (e) { sharedMovies = new Set(); }
+    }
+    updateSharedCounterUI();
+}
+
+function markMovieAsShared(movieId) {
+    sharedMovies.add(movieId.toString());
+    localStorage.setItem('elcavz_shared_movies', JSON.stringify([...sharedMovies]));
+    updateSharedCounterUI();
+    highlightSharedCards();
+    showToastMessage(`✅ "${currentMovieForShare?.title || 'Movie'}" marked as shared!`, false);
+}
+
+function isMovieShared(movieId) {
+    return sharedMovies.has(movieId.toString());
+}
+
+function updateSharedCounterUI() {
+    const counterSpan = document.getElementById('sharedCountDisplay');
+    if (counterSpan) counterSpan.innerHTML = `<i class="fas fa-check-circle"></i> Shared: ${sharedMovies.size} movies`;
+}
+
+function highlightSharedCards() {
+    document.querySelectorAll('.movie-card').forEach(card => {
+        const id = card.getAttribute('data-id');
+        if (id && sharedMovies.has(id)) {
+            card.classList.add('shared-marker');
+            if (!card.querySelector('.shared-badge')) {
+                const badge = document.createElement('div');
+                badge.className = 'shared-badge';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Shared';
+                card.style.position = 'relative';
+                card.appendChild(badge);
+            }
+        } else {
+            card.classList.remove('shared-marker');
+            const oldBadge = card.querySelector('.shared-badge');
+            if (oldBadge) oldBadge.remove();
+        }
+    });
+}
+
+// ---------- GENERATE TRENDING HASHTAGS ----------
+function generateTrendingHashtags(movieTitle) {
+    const titleSlug = movieTitle.replace(/\s/g, '');
+    const baseHashtags = [
+        "#ElcavzFlixter", `#${titleSlug}`, "#NowWatching", "#MovieViral", "#TrailerDrop", "#CinemaLovers",
+        "#MustWatchMovie", "#StreamIt", "#FilmCommunity"
+    ];
+    return [...new Set(baseHashtags)].join(" ");
+}
+
+function generateViralCopyText(movieObj, trailerLink) {
+    const title = movieObj.title || 'Movie';
+    const year = movieObj.releaseYear || 'N/A';
+    const ratingText = movieObj.rating ? `⭐ ${movieObj.rating}/10` : '';
+    const voteInfo = movieObj.voteCount ? ` (${movieObj.voteCount.toLocaleString()} votes)` : '';
+    const overviewSnippet = movieObj.overview || 'No synopsis available.';
+    const hashtags = generateTrendingHashtags(title);
+
+    let copyMessage = `🔥✨ "${title}" (${year})\n\n`;
+    copyMessage += `📖 SYNOPSIS: ${overviewSnippet}\n`;
+    if (ratingText) copyMessage += `${ratingText}${voteInfo}\n`;
+    copyMessage += `▶️ OFFICIAL TRAILER: ${trailerLink}\n\n`;
+    copyMessage += `🎬 WATCH THE FULL MOVIE 👉 ${MY_WEBSITE}\n\n`;
+    copyMessage += `${hashtags}\n\n`;
+    copyMessage += `👥 Tag a friend who needs to see this! #TrendingNow #MovieNight`;
+    return copyMessage;
+}
+
+// FIXED: Use regular text URL without embed parameters to avoid CSP issues
+// OPTIMIZED VERSION: Use TMDB's image as the backdrop via a redirect service
+// FIXED: No embed - pure text sharing that works flawlessly with Facebook
+async function buildFacebookShareWithHashtags(movieObj) {
+    // Get trailer link as plain text (not embedded)
+    let trailerLink = '';
+    if (movieObj.trailerKey) {
+        trailerLink = `https://www.youtube.com/watch?v=${movieObj.trailerKey}`;
+    } else if (movieObj.id) {
+        const freshKey = await fetchTrailerKey(movieObj.id);
+        if (freshKey) trailerLink = `https://www.youtube.com/watch?v=${freshKey}`;
+        else trailerLink = `https://www.themoviedb.org/movie/${movieObj.id}`;
+    }
+
+    const title = movieObj.title || 'Movie';
+    const year = movieObj.releaseYear || 'N/A';
+    const ratingText = movieObj.rating ? `⭐ ${movieObj.rating}/10` : '';
+    let overviewSnippet = movieObj.overview || '';
+    if (overviewSnippet.length > 250) overviewSnippet = overviewSnippet.substring(0, 247) + '...';
+    const hashtagsInline = generateTrendingHashtags(title);
+
+    // Build complete share text (all plain text, NO embed, NO iframe)
+    let shareText = `🔥✨ "${title}" (${year}) - Must Watch!\n\n`;
+    shareText += `📖 SYNOPSIS: ${overviewSnippet}\n\n`;
+    if (ratingText) shareText += `${ratingText}\n\n`;
+    shareText += `▶️ OFFICIAL TRAILER: ${trailerLink}\n\n`;
+    shareText += `🎬 WATCH THE FULL MOVIE: ${MY_WEBSITE}\n\n`;
+    shareText += `${hashtagsInline}\n\n`;
+    shareText += `👥 Tag a friend who needs to see this! #TrendingNow #MovieNight`;
+
+    // Encode the share text
+    const encodedShareText = encodeURIComponent(shareText);
+
+    // Facebook share with YOUR WEBSITE as the main link (no video embed)
+    // This avoids all CSP errors!
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php`;
+
+    return shareUrl;
+}
+
+// ---------- TMDB API HELPERS ----------
+async function tmdbFetch(endpoint, params = {}) {
+    const url = new URL(`${BASE_API}${endpoint}`);
+    url.searchParams.append('api_key', API_KEY);
+    url.searchParams.append('language', 'en-US');
+    Object.keys(params).forEach(k => url.searchParams.append(k, params[k]));
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
+    return res.json();
+}
+
+async function getNowPlayingMovies(limit = 50) {
+    const data = await tmdbFetch('/movie/now_playing', { page: 1 });
+    let movies = data.results || [];
+    if (movies.length === 0) {
+        const popular = await tmdbFetch('/movie/popular', { page: 1 });
+        movies = popular.results || [];
+    }
+    return movies.slice(0, limit);
+}
+
+async function searchMoviesByKeyword(query) {
+    if (!query.trim()) return [];
+    const data = await tmdbFetch('/search/movie', { query: query.trim(), page: 1 });
+    return data.results || [];
+}
+
+async function fetchTrailerKey(movieId) {
+    try {
+        const videoData = await tmdbFetch(`/movie/${movieId}/videos`);
+        const officialTrailer = videoData.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        if (officialTrailer) return officialTrailer.key;
+        const anyYt = videoData.results.find(v => v.site === 'YouTube');
+        return anyYt ? anyYt.key : null;
+    } catch (err) {
+        console.warn('trailer error:', err);
+        return null;
+    }
+}
+
+async function getMovieDetails(movieId) {
+    return await tmdbFetch(`/movie/${movieId}`);
+}
+
+// ---------------- RENDER MOVIE GRID ----------------
+function renderMovies(movies, isSearch = false) {
+    if (!movies || movies.length === 0) {
+        moviesContainer.innerHTML = `<div style="background:#1a1f36; border-radius: 2rem; padding: 2rem; text-align:center;"><i class="fas fa-face-frown"></i> No movies found. Try different keywords!</div>`;
+        return;
+    }
+    dynamicHeader.innerHTML = isSearch
+        ? `<span><i class="fas fa-magnifying-glass"></i> 🔍 Search Results (${movies.length})</span><span class="share-stats"><i class="fas fa-check-circle"></i> Shared: ${sharedMovies.size}</span>`
+        : `<span><i class="fas fa-chart-simple"></i> 🔥 Trending & Now Playing</span><span class="share-stats"><i class="fas fa-check-circle"></i> Shared: ${sharedMovies.size}</span>`;
+
+    moviesContainer.innerHTML = movies.map(movie => {
+        const poster = movie.poster_path ? IMG_BASE + movie.poster_path : FALLBACK_POSTER;
+        const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
+        const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+        const shortOverview = movie.overview ? (movie.overview.length > 100 ? movie.overview.slice(0, 100) + '…' : movie.overview) : 'No synopsis.';
+        const isSharedFlag = isMovieShared(movie.id);
+        return `
+          <div class="movie-card ${isSharedFlag ? 'shared-marker' : ''}" data-id="${movie.id}" data-title="${escapeHtml(movie.title)}">
+            ${isSharedFlag ? '<div class="shared-badge"><i class="fas fa-check-circle"></i> Shared</div>' : ''}
+            <img class="poster-img" src="${poster}" alt="${escapeHtml(movie.title)}" loading="lazy">
+            <div class="movie-details">
+              <div class="movie-title">${escapeHtml(movie.title)} (${year})</div>
+              <div class="meta-row">
+                <span><i class="far fa-calendar-alt"></i> ${year}</span>
+                <span class="rating"><i class="fas fa-star"></i> ${rating}</span>
+              </div>
+              <div class="synopsis-preview">${escapeHtml(shortOverview)}</div>
+              <div class="action-buttons">
+                <button class="btn-sm trailer-btn" data-id="${movie.id}" data-title="${escapeHtml(movie.title)}"><i class="fab fa-youtube"></i> Trailer</button>
+                <button class="btn-sm btn-fb-card share-btn-card" data-id="${movie.id}" data-title="${escapeHtml(movie.title)}"><i class="fab fa-facebook"></i> Share</button>
+                <button class="btn-sm btn-copy-card copy-card-btn" data-id="${movie.id}" data-title="${escapeHtml(movie.title)}"><i class="fas fa-copy"></i> Copy</button>
+              </div>
+            </div>
+          </div>
+        `;
+    }).join('');
+    bindCardEvents();
+}
+
+function bindCardEvents() {
+    document.querySelectorAll('.trailer-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.getAttribute('data-id'));
+            const title = btn.getAttribute('data-title');
+            await openModalWithMovie(id, title);
+        });
+    });
+    document.querySelectorAll('.share-btn-card').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.getAttribute('data-id'));
+            await directFacebookShareFromMovie(id);
+        });
+    });
+    document.querySelectorAll('.copy-card-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.getAttribute('data-id'));
+            await copyMovieInfoDirectly(id);
+        });
+    });
+    document.querySelectorAll('.movie-card').forEach(card => {
+        card.addEventListener('click', async (e) => {
+            if (e.target.closest('.trailer-btn') || e.target.closest('.share-btn-card') || e.target.closest('.copy-card-btn')) return;
+            const id = parseInt(card.getAttribute('data-id'));
+            const title = card.getAttribute('data-title');
+            await openModalWithMovie(id, title);
+        });
+    });
+}
+
+let currentMovieForShare = null;
+
+async function openModalWithMovie(movieId, movieTitle) {
+    modal.style.display = 'flex';
+    trailerContainer.innerHTML = '<div class="loader"><i class="fas fa-spinner fa-pulse"></i> Loading trailer...</div>';
+    fullMovieInfoDiv.innerHTML = '';
+    try {
+        const movieDetails = await getMovieDetails(movieId);
+        const trailerKey = await fetchTrailerKey(movieId);
+        const year = movieDetails.release_date ? movieDetails.release_date.split('-')[0] : 'Unknown';
+        const posterFull = movieDetails.poster_path ? IMG_BASE + movieDetails.poster_path : FALLBACK_POSTER;
+        const overviewFull = movieDetails.overview || 'No synopsis available.';
+        const ratingValue = movieDetails.vote_average ? movieDetails.vote_average.toFixed(1) : 'N/A';
+        const voteCount = movieDetails.vote_count || 0;
+
+        if (trailerKey) {
+            trailerContainer.innerHTML = `<div class="trailer-wrapper"><iframe src="https://www.youtube.com/embed/${trailerKey}?rel=0" allowfullscreen></iframe></div>`;
+        } else {
+            trailerContainer.innerHTML = `<div style="background:#1f2748; border-radius: 24px; padding: 24px; text-align:center;"><i class="fab fa-youtube"></i> 🎬 No official trailer found.</div>`;
+        }
+
+        fullMovieInfoDiv.innerHTML = `
+          <div style="display: flex; gap: 1.2rem; flex-wrap: wrap;">
+            <img src="${posterFull}" style="width: 130px; border-radius: 20px;" alt="${escapeHtml(movieDetails.title)}">
+            <div style="flex:1">
+              <h2>${escapeHtml(movieDetails.title)} <span style="font-size: 1.2rem;">(${year})</span></h2>
+              <p><i class="fas fa-star" style="color:#ffbc3c;"></i> ${ratingValue}/10 · ${voteCount.toLocaleString()} votes</p>
+              <p style="margin-top: 14px;">${escapeHtml(overviewFull)}</p>
+              <div style="margin-top: 12px;"><i class="fas fa-link"></i> 🌐 ${MY_WEBSITE}</div>
+            </div>
+          </div>
+        `;
+        const hashtagStr = generateTrendingHashtags(movieDetails.title);
+        document.getElementById('dynamicHashtags').innerHTML = hashtagStr.split(' ').map(tag => `<span class="hashtag">${tag}</span>`).join(' ');
+
+        currentMovieForShare = {
+            id: movieId,
+            title: movieDetails.title,
+            overview: overviewFull,
+            releaseYear: year,
+            rating: ratingValue,
+            voteCount: voteCount,
+            trailerKey: trailerKey,
+            posterPath: movieDetails.poster_path
+        };
+    } catch (err) {
+        trailerContainer.innerHTML = `<div>⚠️ Error loading</div>`;
+        currentMovieForShare = null;
+    }
+}
+
+async function copyMovieInfoDirectly(movieId) {
+    try {
+        const movieDetails = await getMovieDetails(movieId);
+        const trailerKey = await fetchTrailerKey(movieId);
+        const trailerLink = trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : `https://www.themoviedb.org/movie/${movieId}`;
+        const tempObj = {
+            title: movieDetails.title,
+            releaseYear: movieDetails.release_date ? movieDetails.release_date.split('-')[0] : 'N/A',
+            rating: movieDetails.vote_average ? movieDetails.vote_average.toFixed(1) : 'N/A',
+            voteCount: movieDetails.vote_count || 0,
+            overview: movieDetails.overview || 'Great movie!',
+        };
+        const copyText = generateViralCopyText(tempObj, trailerLink);
+        await navigator.clipboard.writeText(copyText);
+        showToastMessage(`📋 Viral post copied! Hashtags + invite to ${MY_WEBSITE}`);
+    } catch (err) { showToastMessage("Copy failed", true); }
+}
+
+async function directFacebookShareFromMovie(movieId) {
+    try {
+        const movieDetails = await getMovieDetails(movieId);
+        const trailerKey = await fetchTrailerKey(movieId);
+        const shareData = {
+            id: movieId,
+            title: movieDetails.title,
+            overview: movieDetails.overview || 'Cinematic gem!',
+            releaseYear: movieDetails.release_date ? movieDetails.release_date.split('-')[0] : 'N/A',
+            rating: movieDetails.vote_average ? movieDetails.vote_average.toFixed(1) : 'N/A',
+            voteCount: movieDetails.vote_count || 0,
+            trailerKey: trailerKey
+        };
+        const fbUrl = await buildFacebookShareWithHashtags(shareData);
+        window.open(fbUrl, '_blank', 'width=650,height=550');
+    } catch (err) {
+        alert("Share error: " + err.message);
+    }
+}
+
+// Modal buttons
+modalFbBtn.addEventListener('click', async () => {
+    if (!currentMovieForShare) { alert("Wait for movie load"); return; }
+    const url = await buildFacebookShareWithHashtags(currentMovieForShare);
+    window.open(url, '_blank');
+});
+
+modalCopyBtn.addEventListener('click', async () => {
+    if (!currentMovieForShare) return;
+    let trailerLink = currentMovieForShare.trailerKey ? `https://www.youtube.com/watch?v=${currentMovieForShare.trailerKey}` : '';
+    if (!trailerLink && currentMovieForShare.id) {
+        const key = await fetchTrailerKey(currentMovieForShare.id);
+        if (key) trailerLink = `https://www.youtube.com/watch?v=${key}`;
+    }
+    const fullCopy = generateViralCopyText(currentMovieForShare, trailerLink);
+    await navigator.clipboard.writeText(fullCopy);
+    showToastMessage("🔥 Viral post + hashtags copied to clipboard!");
+    copyFeedbackSpan.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    setTimeout(() => { copyFeedbackSpan.innerHTML = '<i class="far fa-clipboard"></i> Ready'; }, 2000);
+});
+
+document.getElementById('modalMarkSharedBtn').addEventListener('click', () => {
+    if (currentMovieForShare && currentMovieForShare.id) {
+        markMovieAsShared(currentMovieForShare.id);
+        highlightSharedCards();
+        loadTrendingMovies();
+    } else { alert("No movie loaded"); }
+});
+
+function closeModal() { modal.style.display = 'none'; currentMovieForShare = null; }
+closeModalSpan.onclick = closeModal;
+window.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+async function loadTrendingMovies() {
+    moviesContainer.innerHTML = '<div class="loader"><i class="fas fa-spinner fa-pulse"></i> Loading...</div>';
+    try {
+        const movies = await getNowPlayingMovies(50);
+        renderMovies(movies, false);
+        searchInput.value = '';
+        highlightSharedCards();
+    } catch (err) { moviesContainer.innerHTML = `<div>Error: ${err.message}</div>`; }
+}
+
+async function handleSearch() {
+    const query = searchInput.value.trim();
+    if (!query) { loadTrendingMovies(); return; }
+    moviesContainer.innerHTML = '<div class="loader">Searching...</div>';
+    try {
+        const results = await searchMoviesByKeyword(query);
+        renderMovies(results, true);
+        highlightSharedCards();
+    } catch (err) { moviesContainer.innerHTML = `<div>Search failed</div>`; }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function (m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function showToastMessage(msg, isErr = false) {
+    let t = document.createElement('div');
+    t.className = 'toast-msg';
+    t.innerHTML = `<i class="fas ${isErr ? 'fa-exclamation-triangle' : 'fa-rocket'}"></i> ${msg}`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2800);
+}
+
+searchBtn.addEventListener('click', handleSearch);
+trendingBtn.addEventListener('click', loadTrendingMovies);
+searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
+
+loadSharedStatus();
+loadTrendingMovies();
