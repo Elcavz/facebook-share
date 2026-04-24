@@ -1,193 +1,207 @@
-================================================================================
-                           ELCAVZFLIXTER - MOVIE SHARE HUB
-================================================================================
+# 🎬 ElcavzFlixter — Viral Movie Share + Trailer Hub
 
-A web application that allows users to discover movies, watch trailers, and share
-movie information with viral hashtags directly to Facebook.
+> Discover trending movies, watch trailers, and share viral posts — all in one cinematic experience.
 
-================================================================================
-                           LIVE DEMO
-================================================================================
+![ElcavzFlixter](https://www.elcavzflixter.site/og-image.jpg)
 
-Website: https://www.elcavzflixter.site
+---
 
-================================================================================
-                           FEATURES
-================================================================================
+## 🍿 Live Site
 
-✓ Search movies by title (powered by TMDB API)
-✓ Browse trending and now playing movies
-✓ Watch official YouTube trailers (embedded player)
-✓ Generate viral hashtags automatically for each movie
-✓ Copy complete movie info + trailer link + hashtags to clipboard
-✓ Share to Facebook with auto-filled movie details and hashtags
-✓ Mark movies as "Shared" (saved in browser localStorage)
-✓ Track total shared movies count
-✓ Mobile responsive design
-✓ No Facebook CSP errors (plain text sharing)
+**[https://www.elcavzflixter.site](https://www.elcavzflixter.site)**
 
-================================================================================
-                           TECH STACK
-================================================================================
+---
 
-Frontend: HTML5, CSS3, JavaScript (Vanilla)
-API: TMDB (The Movie Database) API v3
-Icons: Font Awesome 6
-Storage: LocalStorage (for shared movies tracking)
+## 📖 Overview
 
-================================================================================
-                           API KEY USED
-================================================================================
+ElcavzFlixter is a single-page web application that lets users browse now-playing and trending movies, watch official trailers, and generate ready-to-paste viral social media posts — complete with trending hashtags. It's built with vanilla HTML, CSS, and JavaScript, powered by the [TMDB API](https://www.themoviedb.org/documentation/api).
 
-TMDB API Key: b25412885fcb808bb37e93b4c6ccb763
+---
 
-Note: This key is embedded in the code for demo purposes.
-For production, please use environment variables or backend proxy.
+## ✨ Features
 
-================================================================================
-                           HOW TO USE
-================================================================================
+- **🔥 Trending & Now Playing** — Loads up to 50 currently trending/now-playing movies on launch
+- **🔍 Movie Search** — Search any movie by keyword using TMDB's search endpoint
+- **▶️ Trailer Playback** — Watch official YouTube trailers embedded directly in a modal
+- **📋 Viral Post Generator** — Auto-generates a shareable post with synopsis, rating, trailer link, website link, and trending hashtags
+- **📘 Facebook Share** — One-click Facebook share button (opens Facebook sharer with your site as the link)
+- **✅ Shared Tracker** — Marks movies as shared, persists across sessions via `localStorage`, and visually highlights shared cards
+- **#️⃣ Hashtag Engine** — Dynamically generates movie-specific and evergreen hashtags for maximum reach
+- **📱 Responsive Design** — Mobile-friendly layout with adaptive grid
 
-1. Open the website in any modern browser
-2. Browse trending movies or search for any movie
-3. Click on a movie card to:
-   - Watch the official trailer
-   - View full movie synopsis, rating, and release year
-4. Choose action:
-   - [Share on Facebook] - Opens Facebook share dialog with auto-filled content
-   - [Copy Viral Post] - Copies movie info + trailer link + hashtags
-   - [Mark as Shared] - Tracks that you've shared this movie
-5. Shared movies are highlighted with a gold border and "Shared" badge
+---
 
-================================================================================
-                           FACEBOOK SHARE FORMAT
-================================================================================
+## 🖥️ Tech Stack
 
-When you click "Share on Facebook", the following content is auto-filled:
+| Layer | Technology |
+|---|---|
+| Frontend | HTML5, CSS3, Vanilla JavaScript (ES2020+) |
+| Movie Data | [TMDB API v3](https://developers.themoviedb.org/3) |
+| Trailers | YouTube Embed via TMDB video endpoint |
+| Icons | [Font Awesome 6](https://fontawesome.com/) |
+| Storage | Browser `localStorage` |
+| Sharing | Facebook Sharer API |
 
-🔥✨ "Movie Title" (Year) - Must Watch!
+---
 
-📖 SYNOPSIS: Movie description text...
+## 🚀 Getting Started
 
-⭐ 8.5/10
+No build tools or package manager required. This is a pure static site.
 
-▶️ OFFICIAL TRAILER: https://youtube.com/watch?v=xxxxx
+### 1. Clone the repository
 
-🎬 WATCH THE FULL MOVIE: https://www.elcavzflixter.site
+```bash
+git clone https://github.com/YOUR_USERNAME/elcavzflixter.git
+cd elcavzflixter
+```
 
-#ElcavzFlixter #NowWatching #MovieViral #TrailerDrop #CinemaLovers
-#MovieTitle #MustWatchMovie #StreamIt #FilmCommunity
+### 2. Open in a browser
 
-👥 Tag a friend who needs to see this! #TrendingNow #MovieNight
+Simply open `index.html` in your browser:
 
-================================================================================
-                           HASHTAGS GENERATED
-================================================================================
+```bash
+open index.html
+# or on Windows:
+start index.html
+```
 
-Each movie automatically gets these trending hashtags:
+Or serve it locally with any static server:
 
-- #ElcavzFlixter (your brand)
-- #NowWatching
-- #MovieViral
-- #TrailerDrop
-- #CinemaLovers
-- #[MovieTitleWithoutSpaces]
-- #MustWatchMovie
-- #StreamIt
-- #FilmCommunity
+```bash
+npx serve .
+# or
+python3 -m http.server 8080
+```
 
-================================================================================
-                           PROJECT STRUCTURE
-================================================================================
+### 3. Configure your API Key
 
-index.html          - Main application file (HTML, CSS, JavaScript)
-readme.txt          - This documentation file
+In `index.html`, locate the configuration block near the top of the `<script>` tag and replace the values:
 
-All code is contained in a single HTML file for easy deployment.
+```js
+const API_KEY = 'YOUR_TMDB_API_KEY';   // Get one free at https://www.themoviedb.org/settings/api
+const MY_WEBSITE = 'https://your-site-url.com';
+```
 
-================================================================================
-                           CUSTOMIZATION
-================================================================================
+> ⚠️ **Never commit your API key to a public repository.** Consider using environment variables or a backend proxy for production.
 
-Change Website URL:
-Search for "MY_WEBSITE" constant and update the URL.
+---
 
-Change API Key:
-Search for "API_KEY" constant and replace with your TMDB API key.
+## 🔑 Getting a TMDB API Key
 
-Change Hashtags:
-Modify the "baseHashtags" array in generateTrendingHashtags() function.
+1. Create a free account at [themoviedb.org](https://www.themoviedb.org/)
+2. Go to **Settings → API**
+3. Request an API key (v3 auth)
+4. Copy the key and paste it into the config block in `index.html`
 
-Change Shared Movies Storage Key:
-Search for "elcavz_shared_movies" in localStorage functions.
+---
 
-================================================================================
-                           BROWSER SUPPORT
-================================================================================
+## 📁 Project Structure
 
-✓ Chrome (latest)
-✓ Firefox (latest)
-✓ Safari (latest)
-✓ Edge (latest)
-✓ Mobile browsers (iOS/Android)
+```
+elcavzflixter/
+│
+├── index.html          # Main (and only) application file
+│                       # Contains all HTML, CSS, and JavaScript
+└── README.md           # This file
+```
 
-================================================================================
-                           KNOWN ISSUES
-================================================================================
+> The entire app lives in a single `index.html` file — no frameworks, no bundlers, no dependencies to install.
 
-None. The Facebook share functionality uses plain text sharing to avoid
-CSP (Content Security Policy) errors that occur when embedding videos.
+---
 
-================================================================================
-                           DEPLOYMENT
-================================================================================
+## 🎯 How It Works
 
-Simply upload the index.html file to any web server or hosting service.
+### Movie Loading
+On page load, the app calls TMDB's `/movie/now_playing` endpoint. If no results are returned, it falls back to `/movie/popular`. Up to 50 movies are displayed in a responsive card grid.
 
-Recommended: GitHub Pages, Netlify, Vercel, or any static hosting.
+### Search
+Searches hit TMDB's `/search/movie` endpoint in real time when the user clicks **Find Movie** or presses `Enter`.
 
-================================================================================
-                           FILES INCLUDED
-================================================================================
+### Trailer Modal
+Clicking any movie card (or the **Trailer** button) fetches the movie's video list from TMDB and picks the first official YouTube trailer. It renders as an embedded `<iframe>` inside a full-screen modal.
 
-1. index.html - Complete web application
-2. readme.txt - Documentation (this file)
+### Viral Post Generation
+The `generateViralCopyText()` function assembles a shareable text post including:
+- Movie title and release year
+- Synopsis (truncated to ~250 chars for Facebook)
+- Star rating and vote count
+- YouTube trailer link
+- Link to `MY_WEBSITE`
+- Dynamically generated hashtags
 
-================================================================================
-                           CREDITS
-================================================================================
+### Shared Movie Tracking
+Clicking **✅ Mark as Shared** saves the movie ID to `localStorage`. Shared movies get a gold border and badge across sessions.
 
-Movie Data: The Movie Database (TMDB) - https://www.themoviedb.org
-Icons: Font Awesome - https://fontawesome.com
-Font: Inter - Google Fonts
+---
 
-Developed by: Renz Bautista Sayaman
+## 🔧 Configuration Reference
 
-================================================================================
-                           LICENSE
-================================================================================
+| Variable | Description | Default |
+|---|---|---|
+| `API_KEY` | Your TMDB API v3 key | `b25412885f...` *(replace this)* |
+| `BASE_API` | TMDB base API URL | `https://api.themoviedb.org/3` |
+| `IMG_BASE` | TMDB image CDN base | `https://image.tmdb.org/t/p/w500` |
+| `MY_WEBSITE` | Your site URL appended to all share posts | `https://www.elcavzflixter.site` |
+| `FALLBACK_POSTER` | Placeholder image when no poster exists | `via.placeholder.com` |
 
-This project is for educational and demonstration purposes.
-TMDB API usage requires attribution to TMDB.
+---
 
-================================================================================
-                           CONTACT
-================================================================================
+## 📲 Sharing Flow
 
-Website: https://www.elcavzflixter.site
+```
+User clicks Share / Copy
+        │
+        ├─ Facebook Share → Opens facebook.com/sharer with your site URL
+        │
+        └─ Copy Viral Post → Copies full text post to clipboard
+                              (title, synopsis, rating, trailer link,
+                               website link, hashtags, friend tag CTA)
+```
 
-================================================================================
-                           VERSION HISTORY
-================================================================================
+---
 
-v1.0 - Initial release
-  - Movie search and trending
-  - YouTube trailer embedding
-  - Facebook share with auto-filled content
-  - Viral hashtags generation
-  - Shared movies tracking
-  - Copy to clipboard functionality
+## 🌐 Open Graph Meta Tags
 
-================================================================================
-                           END OF README
-================================================================================
+The app includes OG meta tags for rich link previews when the site URL is shared:
+
+```html
+<meta property="og:title" content="ElcavzFlixter - Watch Movies" />
+<meta property="og:description" content="Discover the best movies, watch trailers..." />
+<meta property="og:image" content="https://www.elcavzflixter.site/og-image.jpg" />
+<meta property="og:url" content="https://www.elcavzflixter.site" />
+```
+
+> Make sure `og-image.jpg` exists at your site root for the preview image to display on Facebook/Twitter.
+
+---
+
+## 🗺️ Roadmap / Potential Improvements
+
+- [ ] Add pagination or infinite scroll for more movies
+- [ ] Twitter/X share button
+- [ ] WhatsApp share button
+- [ ] Dark/light mode toggle
+- [ ] Genre filter tabs
+- [ ] Movie watchlist (save movies to watch later)
+- [ ] Move API key to a secure backend proxy
+- [ ] PWA support (offline mode, installable)
+
+---
+
+## ⚠️ Disclaimer
+
+This project uses the [TMDB API](https://www.themoviedb.org/) but is not endorsed or certified by TMDB. All movie data, posters, and metadata are property of their respective owners. This app is for personal/educational use only.
+
+---
+
+## 📄 License
+
+MIT License — free to use, modify, and distribute.
+
+---
+
+## 🙌 Credits
+
+- Movie data: [The Movie Database (TMDB)](https://www.themoviedb.org/)
+- Icons: [Font Awesome](https://fontawesome.com/)
+- Trailers: [YouTube](https://youtube.com/)
