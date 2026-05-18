@@ -75,7 +75,7 @@ function highlightSharedCards() {
 function generateTrendingHashtags(movieTitle) {
     const titleSlug = movieTitle.replace(/\s/g, '');
     const baseHashtags = [
-        "#ElcavzFlixter", `#${titleSlug}`, "#NowWatching", "CineLoop", "#MovieViral", "#TrailerDrop", "#CinemaLovers",
+        "#ElcavzFlixter", `#${titleSlug}`, "#NowWatching", "#CineLoop", "#MovieViral", "#TrailerDrop", "#CinemaLovers",
         "#MustWatchMovie", "#StreamIt", "#FilmCommunity"
     ];
     return [...new Set(baseHashtags)].join(" ");
